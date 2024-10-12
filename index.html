@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Velha</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-image: url('https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNjUyOXwwfDF8c2VhcmNofDV8fGJsdXUlMjB0ZXh0dXJlJTIwYmFja3RvcHxlbnwwfHx8fDE2Mzg3NjI5MDE&ixlib=rb-1.2.1&q=80&w=1080');
+            background-size: cover;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            max-width: 400px; /* Limita a largura do tabuleiro */
+            width: 100%;
+        }
+        .cell {
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+            padding: 20px; /* Espaçamento interno para melhor toque */
+        }
+        .cell:hover {
+            background-color: rgba(255, 255, 255, 1);
+        }
+        .cell.x {
+            color: #ff4081; /* Cor para X */
+        }
+        .cell.o {
+            color: #2196F3; /* Cor para O */
+        }
+        #message, #score, #endScreen {
+            margin-top: 20px;
+            font-size: 1.5em;
+            display: none;
+        }
+        #endScreen {
+            flex-direction: column;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            background-color: #ff4081;
+            color: white;
+            width: 100%;
+            max-width: 200px; /* Limita a largura dos botões */
+        }
+        button:hover {
+            background-color: #e91e63;
+        }
+        #musicButton {
+            margin-top: 20px;
+            background-color: #2196F3;
+        }
+        #musicButton:hover {
+            background-color: #1976d2;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column; /* Empilha os campos de entrada */
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            padding: 10px;
+            font-size: 1em;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%; /* Campo de entrada ocupa toda a largura */
+            max-width: 200px; /* Limita a largura dos campos de entrada */
+        }
+        @media (min-width: 600px) {
+            .input-group {
+                flex-direction: row; /* Alinha os campos de entrada lado a lado em telas maiores */
+            }
+            input {
+                width: auto; /* Permite que os campos ocupem o tamanho natural */
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Jogo da Velha</h1>
+    <div class="input-group">
+        <input type="text" id="player1" placeholder="Nome do Jogador 1 (X)" />
+        <input type="text" id="player2" placeholder="Nome do Jogador 2 (O)" />
+        <button id="startButton">Iniciar Jogo</button>
+    </div>
+
+    <div id="board" style="display: none;">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+    </div>
+
+    <div id="score">
+        <p><span id="scorePlayer1">0</span> - <span id="scorePlayer2">0</span></p>
+    </div>
+
+    <div id="message"></div>
+    <div id="endScreen">
+        <p id="winnerMessage"></p>
+        <button id="playAgainButton">Jogar Novamente</button>
+        <button id="exitButton">Sair</button>
+    </div>
+
+    <audio id="backgroundMusic" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+        Seu navegador não suporta o elemento de áudio.
+    </audio>
+    <button id="musicButton">Parar Música</button>
+
+    <script>
+        let board = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let player1, player2;
+        let score = { X: 0, O: 0 };
+        const music = document.getElementById('backgroundMusic');
+        const musicButton = document.getElementById('musicButton');
+
+        document.getElementById('startButton').addEventListener('click', startGame);
+        document.getElementById('playAgainButton').addEventListener('click', resetGame);
+        document.getElementById('exitButton').addEventListener('click', () => {
+            window.close();
+        });
+        musicButton.addEventListener('click', toggleMusic);
+
+        function startGame() {
+            player1 = document.getElementById('player1').value || 'Jogador 1';
+            player2 = document.getElementById('player2').value || 'Jogador 2';
+            document.getElementById('board').style.display = 'grid';
+            document.getElementById('score').style.display = 'block';
+            document.getElementById('message').textContent = '';
+            document.getElementById('endScreen').style.display = 'none';
+            resetGame();
+            updateScore();
+            music.play();
+        }
+
+        document.querySelectorAll('.cell').forEach(cell => {
+            cell.addEventListener('click', handleCellClick);
+        });
+
+        function handleCellClick(event) {
+            const index = event.target.getAttribute('data-index');
+            if (board[index] !== '' || checkWinner()) return;
+
+            board[index] = currentPlayer;
+            event.target.textContent = currentPlayer;
+            event.target.classList.add(currentPlayer.toLowerCase()); // Adiciona a classe para a cor
+
+            if (checkWinner()) {
+                document.getElementById('winnerMessage').textContent = `${currentPlayer === 'X' ? player1 : player2} ganhou!`;
+                document.getElementById('endScreen').style.display = 'flex';
+                score[currentPlayer]++;
+                updateScore();
+                showLapadaMessage();
+            } else if (board.every(cell => cell !== '')) {
+                document.getElementById('winnerMessage').textContent = 'Empate!';
+                document.getElementById('endScreen').style.display = 'flex';
+            } else {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            }
+        }
+
+        function showLapadaMessage() {
+            if (score.X - score.O === 2) {
+                document.getElementById('message').textContent = `${player2}, você tá pegando uma lapada! KKKKKK`;
+            } else if (score.O - score.X === 2) {
+                document.getElementById('message').textContent = `${player1}, você tá pegando uma lapada! KKKKKK`;
+            } else {
+                document.getElementById('message').textContent = '';
+            }
+        }
+
+        function checkWinner() {
+            const winningCombinations = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
+
+            return winningCombinations.some(combination => {
+                const [a, b, c] = combination;
+                return board[a] && board[a] === board[b] && board[a] === board[c];
+            });
+        }
+
+        function resetGame() {
+            board = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            document.getElementById('message').textContent = '';
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o'); // Remove as classes ao reiniciar
+            });
+            document.getElementById('endScreen').style.display = 'none';
+        }
+
+        function updateScore() {
+            document.getElementById('scorePlayer1').textContent = score['X'];
+            document.getElementById('scorePlayer2').textContent = score['O'];
+        }
+
+        function toggleMusic() {
+            if (music.paused) {
+                music.play();
+                musicButton.textContent = 'Parar Música';
+            } else {
+                music.pause();
+                musicButton.textContent = 'Tocar Música';
+            }
+        }
+    </script>
+</body>
+</html>
